@@ -163,12 +163,23 @@ chmod 755 ${WEBROOT}/${SITENAME}/${REPONAME}
 # change ownership
 chown -R ${SITEUSER}:${SITEUSER} ${WEBROOT}/${SITENAME}/*
 
-
-# create a server block for nginx
+# modifying nginx config
 # -----------------------------------------------------------------------------
 info "Configuring nginx server"
 sed -i "s/server_tokens off;.*$/# ${CHANGE_STAMP} \nserver_tokens off;/" /etc/nginx/nginx.conf
-echo "fastcgi_cache_path /etc/nginx/cache levels=1:2 keys_zone=MYAPP:100m inactive=60m;" >  /etc/nginx/sites-available/${SITENAME}
+
+
+# create a server block for nginx
+# -----------------------------------------------------------------------------
+rm -rf /etc/nginx/sites-available/default
+rm -rf /etc/nginx/sites-enabled/default
+echo "# Expires map for cache control header"                                  >  /etc/nginx/sites-available/${SITENAME}
+echo "map \$sent_http_content_type \$expires {"                                >>  /etc/nginx/sites-available/${SITENAME}
+echo "    text/css                   max;"                                     >>  /etc/nginx/sites-available/${SITENAME}
+echo "    application/javascript     max;"                                     >>  /etc/nginx/sites-available/${SITENAME}
+echo "    ~image/                    max;"                                     >>  /etc/nginx/sites-available/${SITENAME}
+echo "}"                                                                       >>  /etc/nginx/sites-available/${SITENAME}
+echo "fastcgi_cache_path /etc/nginx/cache levels=1:2 keys_zone=MYAPP:100m inactive=60m;" >>  /etc/nginx/sites-available/${SITENAME}
 echo "fastcgi_cache_key \"\$scheme\$request_method\$host\$request_uri\";"      >> /etc/nginx/sites-available/${SITENAME}
 echo "server {"                                                                >> /etc/nginx/sites-available/${SITENAME}
 echo "        listen ${PORT};"                                                 >> /etc/nginx/sites-available/${SITENAME}
@@ -178,6 +189,8 @@ echo "        root ${WEBROOT}/${SITENAME}/${REPONAME}/public;"                 >
 echo "        access_log ${WEBROOT}/${SITENAME}/logs/access.log;"              >> /etc/nginx/sites-available/${SITENAME}
 echo "        error_log  ${WEBROOT}/${SITENAME}/logs/error.log;"               >> /etc/nginx/sites-available/${SITENAME}
 echo "        index index.html index.php;"                                     >> /etc/nginx/sites-available/${SITENAME}
+echo ""                                                                        >> /etc/nginx/sites-available/${SITENAME}
+echo "        expires \$expires;"                                              >> /etc/nginx/sites-available/${SITENAME}
 echo ""                                                                        >> /etc/nginx/sites-available/${SITENAME}
 echo "        add_header X-Frame-Options \"sameorigin\";"                      >> /etc/nginx/sites-available/${SITENAME}
 echo "        add_header X-XSS-Protection \"1; mode=block\";"                  >> /etc/nginx/sites-available/${SITENAME}
@@ -235,13 +248,13 @@ info "... setting PHP's session cache handler to $PHP_SESSION_HANDLER"
 sed -i "s/^.*session.save_handler = .*$/; ${CHANGE_STAMP} \nsession.save_handler = ${PHP_SESSION_HANDLER}/g" $PHP_SERVER_CONFIG
 update_change_log "$PHP_SERVER_CONFIG" "set PHP's session handler to ${PHP_SESSION_HANDLER}"
 
-if [ "${PHP_SESSION_HANDLER}" == "files" ]; then
-  info "... creating directory structure to store PHP session data"
-  mkdir -p ${WEBROOT}/temp/${SITENAME}
-  chown ${SITEUSER}:${SITEUSER} ${WEBROOT}/temp/${SITENAME}
-  SESSION_SAVE_PATH="${WEBROOT}/temp/${SITENAME}"
-else
-  if [ "${PHP_SESSION_HANDLER}" == "memcached" ]; then
+# if [ "${PHP_SESSION_HANDLER}" == "files" ]; then
+  # info "... creating directory structure to store PHP session data"
+  # mkdir -p ${WEBROOT}/temp/${SITENAME}
+  # chown ${SITEUSER}:${SITEUSER} ${WEBROOT}/temp/${SITENAME}
+  # SESSION_SAVE_PATH="${WEBROOT}/temp/${SITENAME}"
+# else
+  # if [ "${PHP_SESSION_HANDLER}" == "memcached" ]; then
 
     # check if memcached configured to listen to Unix socket or TCP socket
     if [ "${MEMCACHED_TCP_PORT}" == "" ]; then
@@ -253,23 +266,23 @@ else
       info "... creating TCP connection between memcached and PHP"
       SESSION_SAVE_PATH="127.0.0.1:${MEMCACHED_TCP_PORT}"
     fi
-  else
+  # else
 
     # we are not using files or memcached
-    warning "Neither files or memcached is used for PHP session handling"
-  fi
-fi
+    # warning "Neither files or memcached is used for PHP session handling"
+  # fi
+# fi
 
 info "... setting session save_path to ${SESSION_SAVE_PATH}"
 sed -i "s~^;session.save_path =.*$~; ${CHANGE_STAMP} \nsession.save_path = ${SESSION_SAVE_PATH}~" $PHP_SERVER_CONFIG
 update_change_log "$PHP_SERVER_CONFIG" "set PHP's session save_path to ${SESSION_SAVE_PATH}"
 
 info "... Creating a dummy php file for test"
-echo "<HTML><HEAD><TITLE>Fairy $VERSION - PHP Test Page</TITLE></HEAD>"        > ${WEBROOT}/${SITENAME}/${REPONAME}/public/info.php
-echo "<BODY><CENTER><H1>Test Page</H1><H6>Fairy Version $VERSION</H6><HR />"   >> ${WEBROOT}/${SITENAME}/${REPONAME}/public/info.php
+# echo "<HTML><HEAD><TITLE>Fairy $VERSION - PHP Test Page</TITLE></HEAD>"        > ${WEBROOT}/${SITENAME}/${REPONAME}/public/info.php
+# echo "<BODY><CENTER><H1>Test Page</H1><H6>Fairy Version $VERSION</H6><HR />"   >> ${WEBROOT}/${SITENAME}/${REPONAME}/public/info.php
 echo "<?php echo 'Current script owner: ' . get_current_user() . '<br />' . 'Server: ' . \$_SERVER['SERVER_ADDR']; ?> " >> ${WEBROOT}/${SITENAME}/${REPONAME}/public/info.php
-echo "</CENTER></BODY></HTML>"                                                 >> ${WEBROOT}/${SITENAME}/${REPONAME}/public/info.php
-echo "<?php phpinfo(); ?>"                                                     >> ${WEBROOT}/${SITENAME}/${REPONAME}/public/info_.php
+# echo "</CENTER></BODY></HTML>"                                                 >> ${WEBROOT}/${SITENAME}/${REPONAME}/public/info.php
+
 # change ownership
 chown ${SITEUSER}:${SITEUSER} ${WEBROOT}/${SITENAME}/${REPONAME}/public/*
 gather "Some dummy files are created for testing in website's root directory: info.php, info_.php"
