@@ -48,7 +48,7 @@ function update_change_log () {
 # Initial checks
 # -----------------------------------------------------------------------------
 # check application repo is provided in command line
-if [ $# -ne 2 ]; then
+if [ $# -ne 1 ]; then
   help "Application code repo is not supplied in command line"
   exit -1
 else
@@ -507,7 +507,6 @@ chmod 0600 /root/system_change_log
 chmod 0700 /root/create_database.sh 
 
 
-
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                          Strengthening SSH                                  #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -550,10 +549,9 @@ info "Composer installed"
 #                          Install Redis                                      #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 info "Installing redis server..."
-apt --assume-yes --quiet install redis-server. >> /dev/null
+apt-get --assume-yes --quiet install redis-server >> /dev/null
 If_Error_Exit "Failed to install redis."
 info "Redis server installed"
-
 info "Configuring redis as a systemd supervised service..."
 sed -i "s/supervised no.*$/# ${CHANGE_STAMP} \nsupervised systemd/" /etc/redis/redis.conf
 systemctl restart redis.service
