@@ -540,6 +540,8 @@ ufw logging on
 info "Trying to install composer for PHP..."
 apt-get install --assume-yes --quiet unzip  >>/dev/null
 cd /root/
+export HOME=/root
+export COMPOSER_HOME=/root
 curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 If_Error_Exit "Failed to load composer."
 info "Composer installed"
