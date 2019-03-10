@@ -538,7 +538,7 @@ ufw logging on
 #                          Install PHP Composer                               #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 info "Trying to install composer for PHP..."
-apt-get install --assume-yes --quiet unzip  >>/dev/null
+apt-get install --assume-yes --quiet unzip php-zip php7.2-mbstring php-xml >>/dev/null
 cd /root/
 export HOME=/root
 export COMPOSER_HOME=/root
