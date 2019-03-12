@@ -602,12 +602,13 @@ sed -i "s/^DB_DATABASE=.*$/DB_DATABASE=db_${REPONAME}/" .env
 sed -i "s/^DB_USERNAME=.*$/DB_USERNAME=db_${REPONAME}_usr/" .env
 sed -i "s/^DB_PASSWORD=.*$/DB_PASSWORD=${USER_DB_PASS}\nDB_SOCKET=\/var\/run\/mysqld\/mysqld.sock/" .env
 
-php artisan migrate
+php artisan migrate --seed
 php artisan storage:link
 sudo -H -u ${SITEUSER} bash -c 'composer install --optimize-autoloader --no-dev'
 php artisan config:cache
-#php artisan queue:restart
-#php artisan route:cache # MAKE SURE THERE IS NO CLOSURE-BASED ROUTE
+php artisan route:cache # MAKE SURE THERE IS NO CLOSURE-BASED ROUTE
+php artisan passport:keys
+php artisan queue:restart
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                          Certbot installation                               #
