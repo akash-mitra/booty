@@ -4,11 +4,11 @@
 # Written by Akash Mitra (akash.mitra@gmail.com)
 # 
 # Written for Ubuntu 18.04 LTS
-# Version 0.3
+# Version 0.4
 #
 #
 
-VERSION="0.3"
+VERSION="0.4"
 set -o pipefail
 
 # Environment variables - setting default log level to info
@@ -66,11 +66,11 @@ fi
 # -----------------------------------------------------------------------------
 # configurable parameters
 # -----------------------------------------------------------------------------
-# specify the domain name of the website
-DOMAIN_NAME='kayna.com'
+# specify the default domain name of the website
+DOMAIN_NAME='example.com'
 
 # specify an SSH connection port. Leave this blank if you want to continue with the default port (22)
-SSH_PORT=2222
+SSH_PORT=2244
 
 # -----------------------------------------------------------------------------
 # default parameters
@@ -94,7 +94,7 @@ GLOBAL_CHANGE_ID=1
 CHANGE_STAMP="Line modified by Fairy below. Refer 00001"
 PHP_SERVER_CONFIG="/etc/php/7.2/fpm/php.ini"
 MEMCACHED_IPC_SOCKET_PATH="/tmp/memcached.sock"
-SITENAME='kayna'
+SITENAME='app'
 DO=1 # change to 1 if installing in Digital Ocean
 REPONAME=`echo $GIT_REPO_URL | rev | cut -d'/' -f1 | cut -d'.' -f2 | rev`
 
@@ -607,8 +607,8 @@ php artisan storage:link
 sudo -H -u ${SITEUSER} bash -c 'composer install --optimize-autoloader --no-dev'
 php artisan config:cache
 php artisan route:cache # MAKE SURE THERE IS NO CLOSURE-BASED ROUTE
-php artisan passport:keys
-php artisan queue:restart
+#php artisan passport:keys
+#php artisan queue:restart
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                          Certbot installation                               #
