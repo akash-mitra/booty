@@ -606,9 +606,9 @@ php artisan migrate --seed
 php artisan storage:link
 sudo -H -u ${SITEUSER} bash -c 'composer install --optimize-autoloader --no-dev'
 php artisan config:cache
-php artisan route:cache # MAKE SURE THERE IS NO CLOSURE-BASED ROUTE
-#php artisan passport:keys
-#php artisan queue:restart
+# php artisan route:cache # MAKE SURE THERE IS NO CLOSURE-BASED ROUTE
+# php artisan passport:keys
+# php artisan queue:restart
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                          Certbot installation                               #
