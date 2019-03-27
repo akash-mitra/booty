@@ -619,6 +619,11 @@ add-apt-repository ppa:certbot/certbot -y
 apt-get update
 apt-get install certbot python-certbot-nginx --assume-yes  --quiet
 
+# Below code is to ensure that we can run certbot without sudo later
+chown -R ${SITEUSER}:${SITEUSER} /etc/letsencrypt
+chown -R ${SITEUSER}:${SITEUSER} /var/log/letsencrypt
+chown -R ${SITEUSER}:${SITEUSER} /var/lib/letsencrypt
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                          Finalizing the setup                               #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
