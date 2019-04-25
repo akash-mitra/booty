@@ -1,22 +1,40 @@
 # booty
-Deploy your Laravel application easily from your Github repository in a DigitalOcean droplet configured with nginx, mysql, redis etc.
+Install and Host your Laravel application easily from your Github repository in a bare-bone DigitalOcean droplet.
+
+Tested on Ubuntu 18.04 LTS only.
 
 ## How to use
-Download `booty.sh` from Github in a newly spawned Ubuntu 18.04 box like below. 
+Download and run `booty.sh` script in a bare-bone freshly spawned DigitalOcean server like below. Provide your application code URL as a parameter and it will automatically install the application.
 
 ```
 curl -O https://raw.githubusercontent.com/akash-mitra/booty/master/booty.sh
+bash booty.sh https://github.com/your-name/application.git
 ```
 
-After the file is downloaded, run the file by supplying it the URL of your application's Github repository. 
+## Features
 
-```
-$ bash booty.sh https://github.com/your-name/application.git
-```
+* Installs latest LEMP stack 
+* Configures FPM and Nginx for performance
+* Configures separate application user for security
+* Installs latest MySQL Database (Maria DB)
+* Downloads your application and installs it via `composer`
+* Automatically updates `.env` file with DB connection details
+* Installs Memcache, Redis, Certbot for LetsEncrypt, etc.
+* Runs other Laravel artisan commands (`migrate`, `key:generate`, `config:cache` etc)
+* Hardens your system and enables Firewall.
+* Generates detail installation log for debugging
 
-If you would like to host your Laravel application under a specific domain name, you may provide the domain name in the `booty.sh` file itself. If you provide a domain name, then `booty.sh` will make necessary changes in the nginx configuration file so that nginx can recognise that domain name. Similarly, you may also want to customize the `SSH` port your application should listen to. To change the domain name or ssh port, update the below 2 variables inside the file before you execute the file.
+## Customizations
+
+### Assign a Domain Name
+If you would like to host your Laravel application under a specific domain name, you may provide the domain name in the `booty.sh` file itself. If you provide a domain name, then `booty.sh` will make necessary changes in the nginx configuration file so that nginx can recognise that domain name. To change the domain name, update the below variable inside the file before you execute the file.
 
 * DOMAIN_NAME='my-application.com'
-* REPONAME="my-application" 
 
-Do not install LEMP stack yourself - booty will do that for you.
+
+### Customize SSH port
+You may also want to customize the `SSH` port your application should listen to. To change the ssh port, update the below variable inside the file before you execute the file.
+
+* SSH_PORT
+
+
