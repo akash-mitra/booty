@@ -178,16 +178,19 @@ sed -i "s/server_tokens off;.*$/# ${CHANGE_STAMP} \nserver_tokens off;/" /etc/ng
 rm -rf /etc/nginx/sites-available/default
 rm -rf /etc/nginx/sites-enabled/default
 echo "# Expires map for cache control header"                                  >  /etc/nginx/sites-available/${SITENAME}
+echo "# For each type of contents, we define the expiry time"                  >>  /etc/nginx/sites-available/${SITENAME}
 echo "map \$sent_http_content_type \$expires {"                                >>  /etc/nginx/sites-available/${SITENAME}
 echo "    text/css                   max;"                                     >>  /etc/nginx/sites-available/${SITENAME}
 echo "    application/javascript     max;"                                     >>  /etc/nginx/sites-available/${SITENAME}
 echo "    ~image/                    max;"                                     >>  /etc/nginx/sites-available/${SITENAME}
 echo "}"                                                                       >>  /etc/nginx/sites-available/${SITENAME}
+echo ""                                                                        >>  /etc/nginx/sites-available/${SITENAME}
+echo "# Define the cache path, max size (100mb) and inactive time"             >>  /etc/nginx/sites-available/${SITENAME}
 echo "fastcgi_cache_path /etc/nginx/cache levels=1:2 keys_zone=MYAPP:100m inactive=60m;" >>  /etc/nginx/sites-available/${SITENAME}
 echo "fastcgi_cache_key \"\$scheme\$request_method\$host\$request_uri\";"      >> /etc/nginx/sites-available/${SITENAME}
+echo ""                                                                        >>  /etc/nginx/sites-available/${SITENAME}
 echo "server {"                                                                >> /etc/nginx/sites-available/${SITENAME}
 echo "        listen ${PORT};"                                                 >> /etc/nginx/sites-available/${SITENAME}
-# echo "        listen [::]:${PORT};"                                            >> /etc/nginx/sites-available/${SITENAME}
 echo "        server_name ${DOMAIN_NAME} www.${DOMAIN_NAME};"                  >> /etc/nginx/sites-available/${SITENAME}
 echo "        root ${WEBROOT}/${SITENAME}/${REPONAME}/public;"                 >> /etc/nginx/sites-available/${SITENAME}
 echo "        access_log ${WEBROOT}/${SITENAME}/logs/access.log;"              >> /etc/nginx/sites-available/${SITENAME}
@@ -302,9 +305,9 @@ update_change_log "${FPM_POOL_DIR}/${SITENAME}.conf" "change listen.user and lis
 info "... adjusting buffer allocation by nginx for FastCGI"
 echo ""                                                     >> ${FASTCGI_PARAM}
 echo "# ${CHANGE_STAMP}"                                    >> ${FASTCGI_PARAM}
-echo "fastcgi_buffer_size          128k;"                   >> ${FASTCGI_PARAM}
-echo "fastcgi_buffers              4 256k;"                 >> ${FASTCGI_PARAM}
-echo "fastcgi_busy_buffers_size    256k;"                   >> ${FASTCGI_PARAM}
+# echo "fastcgi_buffer_size          128k;"                   >> ${FASTCGI_PARAM}
+echo "fastcgi_buffers              256 4k;"                 >> ${FASTCGI_PARAM}
+# echo "fastcgi_busy_buffers_size    256k;"                   >> ${FASTCGI_PARAM}
 update_change_log "${FASTCGI_PARAM}" "Added fastcgi buffer size parameters"
 
 debug "Backup the current www.conf from ${FPM_POOL_DIR}"
@@ -344,16 +347,25 @@ echo "        location ~ \.php$ {"                                              
 echo "                fastcgi_split_path_info ^(.+\.php)(/.+)$;"                          >> /etc/nginx/sites-available/${SITENAME}
 echo "                fastcgi_pass php-fpm-sock;"                                         >> /etc/nginx/sites-available/${SITENAME}
 echo "                fastcgi_index index.php;"                                           >> /etc/nginx/sites-available/${SITENAME}
+echo "                # Fastcgi cache zone defined as MYAPP"                              >> /etc/nginx/sites-available/${SITENAME}
 echo "                fastcgi_cache MYAPP;"                                               >> /etc/nginx/sites-available/${SITENAME}
-echo "                fastcgi_cache_valid 200 1m;"                                        >> /etc/nginx/sites-available/${SITENAME}
-echo "                fastcgi_cache_bypass \$no_cache;"                                   >> /etc/nginx/sites-available/${SITENAME}
-echo "                fastcgi_no_cache \$no_cache;"                                        >> /etc/nginx/sites-available/${SITENAME}
+echo "                # For 200 and 301 make the cache valid for 30 seconds"              >> /etc/nginx/sites-available/${SITENAME}
+echo "                fastcgi_cache_valid 200 301 30s;"                                   >> /etc/nginx/sites-available/${SITENAME}
+echo "                # For 302 make it valid for 1 minute"                               >> /etc/nginx/sites-available/${SITENAME}
+echo "                fastcgi_cache_valid 302 1m;"                                        >> /etc/nginx/sites-available/${SITENAME}
+echo "                # For 404, make it valid for 5 seconds"                             >> /etc/nginx/sites-available/${SITENAME}
+echo "                fastcgi_cache_valid 404 5s;"                                        >> /etc/nginx/sites-available/${SITENAME}
+echo "                # If upstream error, use the cached version"                        >> /etc/nginx/sites-available/${SITENAME}
 echo "                fastcgi_cache_use_stale updating error timeout invalid_header http_500;" >> /etc/nginx/sites-available/${SITENAME}
+echo "                # Cache bypass"                                                     >> /etc/nginx/sites-available/${SITENAME}
+echo "                fastcgi_cache_bypass \$no_cache;"                                   >> /etc/nginx/sites-available/${SITENAME}
+echo "                fastcgi_no_cache \$no_cache;"                                       >> /etc/nginx/sites-available/${SITENAME}
 echo "                fastcgi_cache_lock on;"                                             >> /etc/nginx/sites-available/${SITENAME}
 echo "                fastcgi_ignore_headers Cache-Control Expires Set-Cookie;"           >> /etc/nginx/sites-available/${SITENAME}
 echo "                include /etc/nginx/fastcgi_params;"                                 >> /etc/nginx/sites-available/${SITENAME}
 echo "                fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;">> /etc/nginx/sites-available/${SITENAME}
 echo "                fastcgi_intercept_errors on;"                                       >> /etc/nginx/sites-available/${SITENAME}
+echo "                add_header BT-Cache-Skip-Reason \$skip_reason;"                    >> /etc/nginx/sites-available/${SITENAME}
 echo "        }"                                                                          >> /etc/nginx/sites-available/${SITENAME}
 echo ""                                                                                   >> /etc/nginx/sites-available/${SITENAME}
 echo "        #Cache everything by default"                                               >> /etc/nginx/sites-available/${SITENAME}
@@ -361,12 +373,20 @@ echo "        set \$no_cache 0;"                                                
 echo "        #Don't cache POST requests"                                                 >> /etc/nginx/sites-available/${SITENAME}
 echo "        if (\$request_method = POST)"                                               >> /etc/nginx/sites-available/${SITENAME}
 echo "        {"                                                                          >> /etc/nginx/sites-available/${SITENAME}
-echo "                set \$no_cache 1;"                                                   >> /etc/nginx/sites-available/${SITENAME}
+echo "                set \$no_cache 1;"                                                  >> /etc/nginx/sites-available/${SITENAME}
+echo "                set \$skip_reason POST;"                                            >> /etc/nginx/sites-available/${SITENAME}
 echo "        }"                                                                          >> /etc/nginx/sites-available/${SITENAME}
-echo "        #Don't cache if the URL contains a query string"                                                 >> /etc/nginx/sites-available/${SITENAME}
-echo "        if (\$query_string != \"\")"                                               >> /etc/nginx/sites-available/${SITENAME}
+echo "        #Don't cache certain uris"                                                  >> /etc/nginx/sites-available/${SITENAME}
+echo "        if (\$request_uri ~* \"admin|api\")"                                        >> /etc/nginx/sites-available/${SITENAME}
 echo "        {"                                                                          >> /etc/nginx/sites-available/${SITENAME}
-echo "                set \$no_cache 1;"                                                   >> /etc/nginx/sites-available/${SITENAME}
+echo "                set \$no_cache 1;"                                                  >> /etc/nginx/sites-available/${SITENAME}
+echo "                set \$skip_reason ADMIN;"                                           >> /etc/nginx/sites-available/${SITENAME}
+echo "        }"                                                                          >> /etc/nginx/sites-available/${SITENAME}
+echo "        #Don't cache if the URL contains a query string"                            >> /etc/nginx/sites-available/${SITENAME}
+echo "        if (\$query_string != \"\")"                                                >> /etc/nginx/sites-available/${SITENAME}
+echo "        {"                                                                          >> /etc/nginx/sites-available/${SITENAME}
+echo "                set \$no_cache 1;"                                                  >> /etc/nginx/sites-available/${SITENAME}
+echo "                set \$skip_reason QUERYSTRING;"                                     >> /etc/nginx/sites-available/${SITENAME}
 echo "        }"                                                                          >> /etc/nginx/sites-available/${SITENAME}
 # echo "        #Don't cache the following URLs"                                                 >> /etc/nginx/sites-available/${SITENAME}
 # echo "        if (\$request_uri ~* \"/(cp/)\")"                                               >> /etc/nginx/sites-available/${SITENAME}
