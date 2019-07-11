@@ -235,7 +235,7 @@ info "Updating package lists"
 apt-get --assume-yes --quiet update                                                          >> /dev/null
 
 info "Installing PHP with FastCGI Process Manager (PHP-FPM)"
-apt-get --assume-yes --quiet install php-fpm php-gd php-apcu php-cli php-curl 2>&1 1> /dev/null
+apt-get --assume-yes --quiet install php-fpm php-gd php-apcu php-cli php-curl php-bcmath 2>&1 1> /dev/null
 If_Error_Exit "Can not install PHP fpm"
 info "PHP FPM installed successfully"
 info "Installing memcached for PHP caching"
