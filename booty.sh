@@ -3,7 +3,7 @@
 # Configures a digital ocean droplet for the
 # installation of Laravel-based web applications.
 # Written by Akash Mitra (akash.mitra@gmail.com)
-# 
+#
 # Written for Ubuntu 18.04 LTS
 # Version 0.5
 #
@@ -71,7 +71,7 @@ fi
 # specify the default domain name of the website
 DOMAIN_NAME='example.com'
 
-# specify an SSH connection port. 
+# specify an SSH connection port.
 # Leave this blank if you want to continue with the default port (22)
 SSH_PORT=22440
 
@@ -89,7 +89,7 @@ FASTCGI_PARAM="/etc/nginx/fastcgi_params"
 MARIA_DB_SIGNING_KEY="0xF1656F24C74CD1D8"
 MARIA_DB_VERSION="10.3"
 PHP_SESSION_HANDLER="memcached"
-MEMCACHED_TCP_PORT="" #29216 
+MEMCACHED_TCP_PORT="" #29216
 SESSION_SAVE_PATH=""
 FLAVOR="bionic"
 CHANGE_ID="00001"
@@ -116,7 +116,10 @@ echo "Date: `date '+%F | %H:%M'`. (c) Akash Mitra [akashmitra@gmail.com]     " >
 echo "-----------------------------------------------------------------------" >> /root/config-info.booty.txt
 gather "IMPORTANT: Refer file /root/system-change.booty.log for details of configuration changes"
 gather "System Details: `uname -a`"
-gather "IP address is : `ifconfig eth0 | grep "inet " | cut -d':' -f2 | cut -d' ' -f1`"
+
+PUBLIC_IP=`ifconfig eth0 | grep "inet " | awk -F' '  '{print $2}'`
+
+gather "IP address is : ${PUBLIC_IP}"
 
 
 
@@ -147,20 +150,20 @@ add-apt-repository universe
 # -----------------------------------------------------------------------------
 info "Installing nginx"
 apt-get --assume-yes --quiet install nginx            >> /dev/null
-If_Error_Exit "Unable to install Nginx" 
+If_Error_Exit "Unable to install Nginx"
 info "Nginx Istalled"
 
 info "Fetching application code from Git repo"
 [ -d ${WEBROOT}/${SITENAME} ] || mkdir ${WEBROOT}/${SITENAME}
 cd ${WEBROOT}/${SITENAME}
 git clone --quiet ${GIT_REPO_URL}
-If_Error_Exit "Unable to clone git repo ${GIT_REPO_URL}" 
+If_Error_Exit "Unable to clone git repo ${GIT_REPO_URL}"
 info "Application code downloaded"
 
 # create user, directory structure and files for webserver
-info "Creating user [${SITEUSER}] and web directory [${WEBROOT}/${SITENAME}/${REPONAME}]" 
+info "Creating user [${SITEUSER}] and web directory [${WEBROOT}/${SITENAME}/${REPONAME}]"
 mkdir ${WEBROOT}/${SITENAME}/logs
-useradd -b ${WEBROOT}/${SITENAME} -d ${WEBROOT}/${SITENAME}/${REPONAME} -s /bin/false ${SITEUSER} 
+useradd -b ${WEBROOT}/${SITENAME} -d ${WEBROOT}/${SITENAME}/${REPONAME} -s /bin/false ${SITEUSER}
 If_Error_Exit "Unable to create user [${SITEUSER}]"
 info "User ${SITEUSER} created for web directory ${WEBROOT}/${SITENAME}/${REPONAME}"
 chmod 755 ${WEBROOT}/${SITENAME}/${REPONAME}
@@ -243,7 +246,7 @@ apt-get --assume-yes --quiet install memcached php-memcached                    
 If_Error_Exit "Memcached installation failed"
 
 # configuring php settings
-# ----------------------------------------------------------------------------- 
+# -----------------------------------------------------------------------------
 info "Configuring PHP settings"
 info "... setting PHP maximum post size to ${PHP_POST_MAX_SIZE}"
 sed -i "s/^post_max_size =.*$/; ${CHANGE_STAMP} \npost_max_size = ${PHP_POST_MAX_SIZE}/" $PHP_SERVER_CONFIG
@@ -279,7 +282,7 @@ gather "DO NOT FORGET TO DELETE THE ABOVE FILES ONCE YOUR SERVER IS TESTED OK"
 
 
 # configuring APC setting
-# ----------------------------------------------------------------------------- 
+# -----------------------------------------------------------------------------
 info "Setting APC's (PHP's opcode cache) memory size to ${APC_CACHE_MEM_SIZE}"
 echo "${CHANGE_STAMP}"  >> /etc/php/7.2/mods-available/apcu.ini
 echo "apc.shm_size = ${APC_CACHE_MEM_SIZE}" >> /etc/php/7.2/mods-available/apcu.ini
@@ -287,7 +290,7 @@ update_change_log "/etc/php/7.2/mods-available/apcu.ini" "setting APC's memory s
 
 
 # configuring php-fpm pool setting
-# ----------------------------------------------------------------------------- 
+# -----------------------------------------------------------------------------
 info "Configuring nginx php-fpm pool"
 cp ${FPM_POOL_DIR}/www.conf ${FPM_POOL_DIR}/${SITENAME}.conf
 
@@ -316,8 +319,8 @@ mv ${FPM_POOL_DIR}/www.conf ${FPM_POOL_DIR}/default.conf.bkp
 
 
 # configuring memcached setting
-# ----------------------------------------------------------------------------- 
-info "Configure memcached setting"  
+# -----------------------------------------------------------------------------
+info "Configure memcached setting"
 # to be configured for Unix domain socket connection
 sed -i "/-p 11211/ s/^#*/# ${CHANGE_STAMP} \n#/"     ${MEMCACHED_CONFIG}
 update_change_log "${MEMCACHED_CONFIG}" "Commenting out port switch (-p) as Unix socket will be used"
@@ -333,7 +336,7 @@ update_change_log "${MEMCACHED_CONFIG}" "Setting unix socket to ${MEMCACHED_IPC_
 
 
 # Turning on PHP for virtual hosting
-# ----------------------------------------------------------------------------- 
+# -----------------------------------------------------------------------------
 info "Turning on PHP for virtual hosting"
 info "... configuring Nginx to talk to PHP using Unix socket"
 info "... defining upstream variable [php-fpm-sock] under [/etc/nginx/conf.d/]"
@@ -417,7 +420,7 @@ If_Error_Exit "Memcached failed to restart"
 info "Installing Database"
 
 # adding MariaDB repo to source
-# ----------------------------------------------------------------------------- 
+# -----------------------------------------------------------------------------
 info "... add the MariaDB repository to our sources list"
 # refer https://mariadb.com/kb/en/installing-mariadb-deb-files/
 apt-key adv --recv-keys --keyserver keyserver.ubuntu.com $MARIA_DB_SIGNING_KEY                   2>&1 1> /dev/null
@@ -432,7 +435,7 @@ If_Error_Exit "Can not add MariaDB repo to source list"
 update_change_log "/etc/apt/sources.list" "Added MariaDB repo in sources list"
 
 # installing the database
-# ----------------------------------------------------------------------------- 
+# -----------------------------------------------------------------------------
 info "... refreshing source list"
 apt-get --assume-yes --quiet update                                           >> /dev/null
 info "... installing MariaDB version ${MARIA_DB_VERSION}"
@@ -447,7 +450,7 @@ If_Error_Exit "Databse installation failed!"
 If_Error_Exit "Failed to start database"
 
 # configuring database
-# ----------------------------------------------------------------------------- 
+# -----------------------------------------------------------------------------
 info "Configuring database"
 info "... adding skip-networking"
 sed -i "s/^\[mysqld\]$/\[mysqld]\n# ${CHANGE_STAMP} \nskip-networking\n# /" /etc/mysql/my.cnf
@@ -462,7 +465,7 @@ If_Error_Exit "Failed to start database"
 
 
 # create a new database with new user for the website
-# ----------------------------------------------------------------------------- 
+# -----------------------------------------------------------------------------
 info "Generating create_database.sh script"
 echo '#!/usr/bin/env bash' > /root/create_database.sh
 echo '' >> /root/create_database.sh
@@ -520,14 +523,14 @@ info "creating new user databse db_${REPONAME}"
 bash /root/create_database.sh root ${MYSQL_ROOTPWD} db_${REPONAME} db_${REPONAME}_usr > /tmp/database_details_tmp
 If_Error_Exit "Can not create user database"
 USER_DB_PASS=`cat /tmp/database_details_tmp | rev | cut -d' ' -f1 | rev`
-gather "A new database db_${REPONAME} for user db_${REPONAME}_usr (with password ${USER_DB_PASS}) created in MySQL" 
+gather "A new database db_${REPONAME} for user db_${REPONAME}_usr (with password ${USER_DB_PASS}) created in MySQL"
 gather "Use the script /root/create_databse.sh later for adding new databases"
 rm -f /tmp/database_details_tmp
 
 # changing permissions to read me files
 chmod 0600 /root/config-info.booty.txt
 chmod 0600 /root/system-change.booty.log
-chmod 0700 /root/create_database.sh 
+chmod 0700 /root/create_database.sh
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
@@ -548,7 +551,7 @@ info "... setting basic deny rule for all incoming requests"
 ufw default deny incoming
 sudo ufw default allow outgoing
 info "... allowing ssh access from any"
-ufw allow ${SSH_PORT}/tcp 
+ufw allow ${SSH_PORT}/tcp
 info "... allowing http traffic from any"
 ufw allow ${PORT}/tcp
 info "... allowing https traffic from any"
@@ -620,6 +623,11 @@ cd ${WEBROOT}/${SITENAME}/${REPONAME}
 
 info "Updating .env file..."
 cp .env.example .env
+
+sed -i "s|^APP_URL=.*$|APP_URL=http://${PUBLIC_IP}|" .env
+sed -i "s/^DOMAIN=.*$/DOMAIN=${PUBLIC_IP}/" .env
+sed -i "s/^SESSION_DOMAIN=.*$/SESSION_DOMAIN=${PUBLIC_IP}/" .env
+
 sed -i "s/^DB_DATABASE=.*$/DB_DATABASE=db_${REPONAME}/" .env
 sed -i "s/^DB_USERNAME=.*$/DB_USERNAME=db_${REPONAME}_usr/" .env
 sed -i "s/^DB_PASSWORD=.*$/DB_PASSWORD=${USER_DB_PASS}\nDB_SOCKET=\/var\/run\/mysqld\/mysqld.sock/" .env
@@ -662,7 +670,6 @@ apt-get --assume-yes --quiet  update                   >> /dev/null
 apt-get --assume-yes --quiet  autoremove               >> /dev/null
 history -c
 service ssh restart
-ufw --force enable 
+ufw --force enable
 info "All Done! Rebooting..."
 reboot
-
