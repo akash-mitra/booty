@@ -5,11 +5,11 @@
 # Written by Akash Mitra (akash.mitra@gmail.com)
 #
 # Written for Ubuntu 18.04 LTS
-# Version 0.5
+# Version 0.6
 #
 #
 
-VERSION="0.5"
+VERSION="0.6"
 set -o pipefail
 
 # Environment variables - setting default log level to info
@@ -82,7 +82,7 @@ SITEUSER='appuser'
 WEBROOT='/var/www'
 PORT=80
 APC_CACHE_MEM_SIZE="64M"
-PHP_POST_MAX_SIZE="5M"
+POST_MAX_SIZE="25M"
 FPM_POOL_DIR="/etc/php/7.2/fpm/pool.d"
 MEMCACHED_CONFIG="/etc/memcached.conf"
 FASTCGI_PARAM="/etc/nginx/fastcgi_params"
@@ -94,7 +94,7 @@ SESSION_SAVE_PATH=""
 FLAVOR="bionic"
 CHANGE_ID="00001"
 GLOBAL_CHANGE_ID=1
-CHANGE_STAMP="Line modified by Fairy below. Refer 00001"
+CHANGE_STAMP="Line modified by Booty.sh below. Refer 00001"
 PHP_SERVER_CONFIG="/etc/php/7.2/fpm/php.ini"
 MEMCACHED_IPC_SOCKET_PATH="/tmp/memcached.sock"
 SITENAME='app'
@@ -208,6 +208,7 @@ echo "        add_header X-Content-Type-Options \"nosniff\";"                  >
 echo "        add_header X-Cache \$upstream_cache_status;"                     >> /etc/nginx/sites-available/${SITENAME}
 echo ""                                                                        >> /etc/nginx/sites-available/${SITENAME}
 echo "        charset utf-8;"                                                  >> /etc/nginx/sites-available/${SITENAME}
+echo "        client_max_body_size ${POST_MAX_SIZE};"                          >> /etc/nginx/sites-available/${SITENAME}
 echo ""                                                                        >> /etc/nginx/sites-available/${SITENAME}
 echo "        location / {"                                                    >> /etc/nginx/sites-available/${SITENAME}
 echo "                try_files \$uri \$uri/ /index.php?\$query_string;"       >> /etc/nginx/sites-available/${SITENAME}
@@ -248,9 +249,9 @@ If_Error_Exit "Memcached installation failed"
 # configuring php settings
 # -----------------------------------------------------------------------------
 info "Configuring PHP settings"
-info "... setting PHP maximum post size to ${PHP_POST_MAX_SIZE}"
-sed -i "s/^post_max_size =.*$/; ${CHANGE_STAMP} \npost_max_size = ${PHP_POST_MAX_SIZE}/" $PHP_SERVER_CONFIG
-update_change_log "$PHP_SERVER_CONFIG" "set PHP maximum post size to ${PHP_POST_MAX_SIZE}"
+info "... setting PHP maximum post size to ${POST_MAX_SIZE}"
+sed -i "s/^post_max_size =.*$/; ${CHANGE_STAMP} \npost_max_size = ${POST_MAX_SIZE}/" $PHP_SERVER_CONFIG
+update_change_log "$PHP_SERVER_CONFIG" "set PHP maximum post size to ${POST_MAX_SIZE}"
 
 info "... setting PHP's session cache handler to $PHP_SESSION_HANDLER"
 sed -i "s/^.*session.save_handler = .*$/; ${CHANGE_STAMP} \nsession.save_handler = ${PHP_SESSION_HANDLER}/g" $PHP_SERVER_CONFIG
