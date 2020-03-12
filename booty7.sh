@@ -104,7 +104,8 @@ fi
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 
 if [ $SWAP -eq 1 ]; then
-    wget -O - http://dl.dropbox.com/u/11210438/flockonus-stack.sh | bash
+    echo "Running script"
+    wget -O - https://raw.githubusercontent.com/akash-mitra/booty/master/add-swap.sh | bash
 fi
 
 
