@@ -129,6 +129,8 @@ apt-get --assume-yes --quiet install nginx \
     php-tokenizer \
     php-xml \
     php-gd \
+    php-mysql \
+    php-zip \
     php-curl >> /dev/null
 
 If_Error_Exit "Unable to install Nginx"
@@ -151,7 +153,7 @@ rm -rf /etc/nginx/sites-available/default
 rm -rf /etc/nginx/sites-enabled/default
 
 # download new site config
-curl --silent https://raw.githubusercontent.com/akash-mitra/booty/master/add-swap.sh --output /etc/nginx/sites-available/app
+curl --silent https://raw.githubusercontent.com/akash-mitra/booty/master/nginx-config-app.sh --output /etc/nginx/sites-available/app
 ln -sf /etc/nginx/sites-available/app /etc/nginx/sites-enabled/app
 
 
@@ -180,8 +182,6 @@ sed -i "s/^;opcache.validate_timestamps=.*$/opcache.validate_timestamps=0/" $PHP
 # Refer: https://gist.github.com/fyrebase/62262b1ff33a6aaf5a54
 sed -i "s/^user = www-data$/user = appusr/"                                             $PHP_FPM_POOL_CONFIG_FILE
 sed -i "s/^group = www-data$/group = appusr/"                                           $PHP_FPM_POOL_CONFIG_FILE
-sed -i "s/listen.owner = www-data$/listen.owner = appusr/"                              $PHP_FPM_POOL_CONFIG_FILE
-sed -i "s/listen.group = www-data$/listen.group = appusr/"                              $PHP_FPM_POOL_CONFIG_FILE
 sed -i "s|^listen = /run/php/php7.2-fpm.sock$|listen = /var/run/php/php7.2-fpm.sock|"   $PHP_FPM_POOL_CONFIG_FILE
 
 
@@ -191,10 +191,117 @@ echo "<?php echo 'Current script owner: ' . get_current_user() . '<br />' . 'Ser
 # change the ownership of the files and directories
 chmod 755 ${WEBROOT}
 chown -R appusr:appusr ${WEBROOT}/*
-chown    appusr:appusr /var/run/php/php7.2-fpm.sock
 
 # restart the web server as well as php-fpm services
 systemctl reload nginx
 If_Error_Exit "Can not enable nginx config."
 service php7.2-fpm restart
 If_Error_Exit "Can not enable PHP-FPM."
+
+
+
+# Install Maria DB
+#
+log "[*] Installing and Configuring Database."
+# MariaDB Corporation provides a MariaDB Package Repository for
+# several Linux distributions that use apt to manage packages.
+# This MariaDB Package Repository setup script automatically
+# configures the system to install packages from the MariaDB
+# Package Repository.
+# Refer: https://mariadb.com/kb/en/installing-mariadb-deb-files/
+curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash -s -- --skip-maxscale --skip-tools
+apt-get --assume-yes --quiet install mariadb-server \
+    mariadb-client \
+    libmariadb3 \
+    mariadb-backup \
+    mariadb-common
+
+# Secure the installation and create applications users.
+# This step will create a database called "appdb" with a user called "appusr".
+# The password for this user will be available under /root/mysql_app_password.
+curl -sS https://raw.githubusercontent.com/akash-mitra/booty/master/db-user-setup.sh | bash
+
+# we are going to configure the PDO datbase driver
+# to connect to mysql using unix socket.
+sed -i "s/^pdo_mysql.default_socket=.*$/pdo_mysql.default_socket=\/var\/run\/mysqld\/mysqld.sock/" $PHP_FPM_CONFIG_FILE
+
+
+service mysql restart
+If_Error_Exit "Failed to start database"
+
+
+# Secure the box
+#
+log "[*] Securing the box."
+
+# change port, and in case PasswordAuthentication is "yes", change to "no".
+sed -i "s/.*Port 22.*$/Port ${SSH_PORT}/"                             /etc/ssh/sshd_config
+sed -i "s/.*PasswordAuthentication yes.*$/PasswordAuthentication no/" /etc/ssh/sshd_config
+
+# enable firewall
+ufw default deny incoming
+ufw default allow outgoing
+ufw allow ${SSH_PORT}/tcp
+ufw allow http
+ufw allow https
+ufw --force enable
+ufw status
+
+
+
+# Install Laravel Application specific dependencies
+#
+log "[*] Install Laravel Application specific dependencies."
+
+# install composer
+log "[*] - Composer."
+cd /root/
+export HOME=/root
+export COMPOSER_HOME=/root
+curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+If_Error_Exit "Failed to load composer."
+
+# install Redis
+log "[*] - Redis."
+apt-get --assume-yes --quiet install redis-server >> /dev/null
+sed -i "s/^supervised no.*$/supervised systemd/" /etc/redis/redis.conf
+systemctl restart redis.service
+
+# install Supervisor Daemon
+log "[*] - Supervisor Daemon."
+apt-get --assume-yes --quiet install supervisor  >> /dev/null
+curl -sS https://raw.githubusercontent.com/akash-mitra/booty/master/laravel-worker.conf --output /etc/supervisor/conf.d/laravel-worker.conf
+
+# install certbot
+log "[*] - Certbot"
+apt-get --assume-yes --quiet install software-properties-common >> /dev/null
+add-apt-repository universe -y >> /dev/null
+add-apt-repository ppa:certbot/certbot -y >> /dev/null
+apt-get --assume-yes --quiet update >> /dev/null
+apt-get --assume-yes --quiet install certbot python-certbot-nginx >> /dev/null
+
+chown -R appusr:appusr /etc/letsencrypt
+chown -R appusr:appusr /var/log/letsencrypt
+chown -R appusr:appusr /var/lib/letsencrypt
+
+
+
+
+log "[*] Finalising setup."
+chown -R appusr:appusr /var/www/app
+supervisorctl reread                                   >> /dev/null
+If_Error_Exit "Failed to reread supervisord config."
+supervisorctl update                                   >> /dev/null
+If_Error_Exit "Failed to update supervisord."
+supervisorctl start laravel-worker:*                   >> /dev/null
+If_Error_Exit "Failed to start laravel worker."
+apt-get --assume-yes --quiet  update                   >> /dev/null
+apt-get --assume-yes --quiet  autoremove               >> /dev/null
+systemctl reload nginx                                 >> /dev/null
+If_Error_Exit "Failed to reload nginx."
+service php7.2-fpm restart                             >> /dev/null
+If_Error_Exit "Failed to reload PHP-FPM."
+service ssh restart                                    >> /dev/null
+If_Error_Exit "Failed to load reload sshd."
+history -c
+reboot
