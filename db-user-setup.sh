@@ -34,7 +34,7 @@ MYSQL_ROOT_PWD=`openssl rand -base64 50 | tr -dc 'a-zA-Z0-9' | fold -w 6 | head 
 MYSQL_APP_PWD=`openssl rand -base64 50 | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -4 | paste -sd "-" -`
 
 # Create a new application database (appdb)
-mysql -e "CREATE DATABASE appdb DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_bin";
+mysql -e "CREATE DATABASE appdb DEFAULT CHARACTER SET utf8mb4 DEFAULT COLLATE utf8mb4_unicode_ci";
 
 # Create a new application database user (dbusr)
 # Note - This user can only access from the localhost.

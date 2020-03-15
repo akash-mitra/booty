@@ -121,17 +121,17 @@ apt-get --assume-yes --quiet  dist-upgrade             >> /dev/null
 
 log "[*] Installing nginx."
 apt-get --assume-yes --quiet install nginx \
-    php-fpm \
     php-bcmath \
     php-ctype \
+    php-curl \
+    php-fpm \
+    php-gd \
     php-json \
     php-mbstring \
+    php-mysql \
     php-tokenizer \
     php-xml \
-    php-gd \
-    php-mysql \
-    php-zip \
-    php-curl >> /dev/null
+    php-zip >> /dev/null
 
 If_Error_Exit "Unable to install Nginx"
 
@@ -139,6 +139,7 @@ log "[*] Configuring nginx."
 
 # create web directory
 [ -d ${WEBROOT} ] || mkdir -p ${WEBROOT}/logs
+mkdir ${WEBROOT}/public
 
 # add user and group
 useradd --home-dir ${WEBROOT} --shell /usr/sbin/nologin appusr
@@ -214,7 +215,7 @@ apt-get --assume-yes --quiet install mariadb-server \
     mariadb-client \
     libmariadb3 \
     mariadb-backup \
-    mariadb-common
+    mariadb-common >> /dev/null
 
 # Secure the installation and create applications users.
 # This step will create a database called "appdb" with a user called "appusr".
@@ -265,7 +266,7 @@ If_Error_Exit "Failed to load composer."
 log "[*] - Redis."
 apt-get --assume-yes --quiet install redis-server >> /dev/null
 sed -i "s/^supervised no.*$/supervised systemd/" /etc/redis/redis.conf
-systemctl restart redis.service
+service redis-server restart
 
 # install Supervisor Daemon
 log "[*] - Supervisor Daemon."
@@ -281,9 +282,8 @@ apt-get --assume-yes --quiet update >> /dev/null
 apt-get --assume-yes --quiet install certbot python-certbot-nginx >> /dev/null
 
 chown -R appusr:appusr /etc/letsencrypt
-chown -R appusr:appusr /var/log/letsencrypt
-chown -R appusr:appusr /var/lib/letsencrypt
-
+# chown -R appusr:appusr /var/log/letsencrypt
+# chown -R appusr:appusr /var/lib/letsencrypt
 
 
 
