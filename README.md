@@ -1,4 +1,4 @@
-# booty
+# Booty
 Configures a bare-bone DigitalOcean droplet as a secure LEMP server by installing NGINX, Maria DB and PHP.
 The LEMP stack can then be used to host any web application such as Laravel applications. Current code is tested on Ubuntu 18.04 LTS only.
 
