@@ -6,7 +6,7 @@
 # Written by Akash Mitra (Twitter @aksmtr)
 #
 # Written for Ubuntu 18.04 LTS
-# Version 0.6
+# Version 0.7
 #
 # -----------------------------------------------------------------------------------
 VERSION="0.7"
@@ -27,11 +27,13 @@ function If_Error_Exit () {
 # -----------------------------------------------------------------------------------
 PARAMS=""
 HELP=0                   # show help message
-REPO=0                   # GitHub source code for public repo
 SWAP=1                   # Whether to add a swap space
 SSH_PORT="24600"         # Default SSH Port Number
 VERBOSE=0                # Show verbose information
-WEBROOT="/var/www/app"
+WEBROOT="/var/www"
+APPROOT="${WEBROOT}/app"
+LOGDIR="${WEBROOT}/logs"
+BACKUPDIR="${WEBROOT}/backups"
 
 # Validate the input paramters
 # -----------------------------------------------------------------------------------
@@ -40,11 +42,6 @@ while (( "$#" )); do
     -h|--help)
       HELP=1
       shift     # past argument
-      ;;
-    -r|--repo)
-      REPO="${2}"
-      shift     # past the argument
-      shift     # past the value
       ;;
     -n|--no-swap)
       SWAP=0
@@ -84,7 +81,6 @@ if [ $HELP -eq 1 ]; then
     echo -e "\nConfigures a barebone machine for Laravel installation. Supported options: "
     echo "-h | --help                 Show this message."
     echo "-n | --no-swap              Do not add swap space by default."
-    echo "-r | --repo [HTTPS_REPO]    Path to the public Github repository."
     echo "-p | --port [SSH_PORT]      SSH Port (Default is 24600)."
     echo "-v | --verbose              Show additional information."
     exit 0
@@ -106,7 +102,7 @@ fi
 # -----------------------------------------------------------------------------------
 if [ $SWAP -eq 1 ]; then
     info "[*] Adding Swap space to the server."
-    curl -s https://raw.githubusercontent.com/akash-mitra/booty/master/add-swap.sh | bash
+    curl -sS https://raw.githubusercontent.com/akash-mitra/booty/master/add-swap.sh | bash >> /dev/null
 fi
 
 
@@ -138,8 +134,12 @@ If_Error_Exit "Unable to install Nginx"
 log "[*] Configuring nginx."
 
 # create web directory
-[ -d ${WEBROOT} ] || mkdir -p ${WEBROOT}/logs
-mkdir ${WEBROOT}/public
+[ -d ${WEBROOT} ]    || mkdir -p ${WEBROOT}
+[ -d ${APPROOT} ]    || mkdir -p ${APPROOT}
+[ -d ${LOGDIR} ]     || mkdir -p ${LOGDIR}
+[ -d ${BACKUPDIR} ]  || mkdir -p ${BACKUPDIR}
+mkdir ${APPROOT}/public
+
 
 # add user and group
 useradd --home-dir ${WEBROOT} --shell /usr/sbin/nologin appusr
@@ -186,9 +186,6 @@ sed -i "s/^group = www-data$/group = appusr/"                                   
 sed -i "s|^listen = /run/php/php7.2-fpm.sock$|listen = /var/run/php/php7.2-fpm.sock|"   $PHP_FPM_POOL_CONFIG_FILE
 
 
-# Create a test file in the web root
-echo "<?php echo 'Current script owner: ' . get_current_user() . '<br />' . 'Server: ' . \$_SERVER['SERVER_ADDR']; ?> " >> /var/www/app/public/info.php
-
 # change the ownership of the files and directories
 chmod 755 ${WEBROOT}
 chown -R appusr:appusr ${WEBROOT}/*
@@ -210,7 +207,7 @@ log "[*] Installing and Configuring Database."
 # configures the system to install packages from the MariaDB
 # Package Repository.
 # Refer: https://mariadb.com/kb/en/installing-mariadb-deb-files/
-curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash -s -- --skip-maxscale --skip-tools
+curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash -s -- --skip-maxscale --skip-tools >> /dev/null
 apt-get --assume-yes --quiet install mariadb-server \
     mariadb-client \
     libmariadb3 \
@@ -220,7 +217,7 @@ apt-get --assume-yes --quiet install mariadb-server \
 # Secure the installation and create applications users.
 # This step will create a database called "appdb" with a user called "appusr".
 # The password for this user will be available under /root/mysql_app_password.
-curl -sS https://raw.githubusercontent.com/akash-mitra/booty/master/db-user-setup.sh | bash
+curl -sS https://raw.githubusercontent.com/akash-mitra/booty/master/db-user-setup.sh | bash >> /dev/null
 
 # we are going to configure the PDO datbase driver
 # to connect to mysql using unix socket.
@@ -259,7 +256,8 @@ log "[*] - Composer."
 cd /root/
 export HOME=/root
 export COMPOSER_HOME=/root
-curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+[ -d /usr/local/bin ] || mkdir -p /usr/local/bin
+curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer >> /dev/null
 If_Error_Exit "Failed to load composer."
 
 # install Redis
@@ -288,7 +286,7 @@ chown -R appusr:appusr /etc/letsencrypt
 
 
 log "[*] Finalising setup."
-chown -R appusr:appusr /var/www/app
+chown -R appusr:appusr ${WEBROOT}
 supervisorctl reread                                   >> /dev/null
 If_Error_Exit "Failed to reread supervisord config."
 supervisorctl update                                   >> /dev/null
@@ -304,4 +302,5 @@ If_Error_Exit "Failed to reload PHP-FPM."
 service ssh restart                                    >> /dev/null
 If_Error_Exit "Failed to load reload sshd."
 history -c
+echo "All done. Rebooting the box."
 reboot
