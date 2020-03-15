@@ -7,13 +7,13 @@
 # server block for the application
 server {
         listen 80;
-        server_name  www.;
+        server_name www.example.com;
         root /var/www/app/public;
         index index.html index.php;
 
         # we are changing the locations of default log files
-        access_log /var/www/app/logs/access.log;
-        error_log  /var/www/app/logs/error.log;
+        access_log /var/www/logs/access.log;
+        error_log  /var/www/logs/error.log;
 
         # other nginx parameters
         charset utf-8;
