@@ -1,15 +1,15 @@
 #!/bin/bash
-#
+# -----------------------------------------------------------------------------------
 # Configures a Digital Ocean droplet for the
 # installation of Laravel-based web applications.
 #
 # Written by Akash Mitra (Twitter @aksmtr)
 #
-# Written for Ubuntu 18.04 LTS
-# Version 0.7
+# Written for Ubuntu 20.04 LTS (PHP 7.4)
+# Version 0.8
 #
 # -----------------------------------------------------------------------------------
-VERSION="0.7"
+VERSION="0.8"
 set -o pipefail
 export DEBIAN_FRONTEND=noninteractive
 
@@ -28,7 +28,7 @@ function If_Error_Exit () {
 PARAMS=""
 HELP=0                   # show help message
 SWAP=1                   # Whether to add a swap space
-SSH_PORT="24600"         # Default SSH Port Number
+SSH_PORT="22"            # Default SSH Port Number
 VERBOSE=0                # Show verbose information
 WEBROOT="/var/www"
 APPROOT="${WEBROOT}/app"
@@ -117,6 +117,8 @@ apt-get --assume-yes --quiet  dist-upgrade             >> /dev/null
 
 log "[*] Installing nginx."
 apt-get --assume-yes --quiet install nginx \
+    zip \
+    unzip \
     php-bcmath \
     php-ctype \
     php-curl \
@@ -161,14 +163,14 @@ ln -sf /etc/nginx/sites-available/app /etc/nginx/sites-enabled/app
 # PHP configuration
 log "[*] Configuring PHP with FPM."
 
-PHP_FPM_BASE_DIR='/etc/php/7.2/fpm'
+PHP_FPM_BASE_DIR='/etc/php/7.4/fpm'
 PHP_FPM_CONFIG_FILE=${PHP_FPM_BASE_DIR}/php.ini
 PHP_FPM_POOL_CONFIG_FILE=${PHP_FPM_BASE_DIR}/pool.d/www.conf
 
 # Change the maximum size of POST data that PHP will accept.
 sed -i "s/^post_max_size =.*$/post_max_size = ${POST_MAX_SIZE}/" $PHP_FPM_CONFIG_FILE
 
-# enable PHP opcode cache
+# Enable PHP opcode cache
 # Note: We are uning the opcode cache that comes default with PHP > 5.5.
 # Please note, since validate timestamp is disabled, you must reset the
 # OPcache manually by opcache_reset() PHP function call or restart the
@@ -183,7 +185,7 @@ sed -i "s/^;opcache.validate_timestamps=.*$/opcache.validate_timestamps=0/" $PHP
 # Refer: https://gist.github.com/fyrebase/62262b1ff33a6aaf5a54
 sed -i "s/^user = www-data$/user = appusr/"                                             $PHP_FPM_POOL_CONFIG_FILE
 sed -i "s/^group = www-data$/group = appusr/"                                           $PHP_FPM_POOL_CONFIG_FILE
-sed -i "s|^listen = /run/php/php7.2-fpm.sock$|listen = /var/run/php/php7.2-fpm.sock|"   $PHP_FPM_POOL_CONFIG_FILE
+sed -i "s|^listen = /run/php/php7.4-fpm.sock$|listen = /var/run/php/php7.4-fpm.sock|"   $PHP_FPM_POOL_CONFIG_FILE
 
 
 # change the ownership of the files and directories
@@ -193,7 +195,7 @@ chown -R appusr:appusr ${WEBROOT}/*
 # restart the web server as well as php-fpm services
 systemctl reload nginx
 If_Error_Exit "Can not enable nginx config."
-service php7.2-fpm restart
+service php7.4-fpm restart
 If_Error_Exit "Can not enable PHP-FPM."
 
 
@@ -215,7 +217,7 @@ apt-get --assume-yes --quiet install mariadb-server \
     mariadb-common >> /dev/null
 
 # Secure the installation and create applications users.
-# This step will create a database called "appdb" with a user called "appusr".
+# This step will create a database called "appdb" with a user called "dbusr".
 # The password for this user will be available under /root/mysql_app_password.
 curl -sS https://raw.githubusercontent.com/akash-mitra/booty/master/db-user-setup.sh | bash >> /dev/null
 
@@ -273,13 +275,12 @@ curl -sS https://raw.githubusercontent.com/akash-mitra/booty/master/laravel-work
 
 # install certbot
 log "[*] - Certbot"
-apt-get --assume-yes --quiet install software-properties-common >> /dev/null
-add-apt-repository universe -y >> /dev/null
-add-apt-repository ppa:certbot/certbot -y >> /dev/null
-apt-get --assume-yes --quiet update >> /dev/null
-apt-get --assume-yes --quiet install certbot python-certbot-nginx >> /dev/null
+snap install --classic certbot
+# after sitename update is done in nginx config, just run:
+# certbot --nginx
+# certbot renew --dry-run
 
-chown -R appusr:appusr /etc/letsencrypt
+# chown -R appusr:appusr /etc/letsencrypt
 # chown -R appusr:appusr /var/log/letsencrypt
 # chown -R appusr:appusr /var/lib/letsencrypt
 
@@ -297,7 +298,7 @@ apt-get --assume-yes --quiet  update                   >> /dev/null
 apt-get --assume-yes --quiet  autoremove               >> /dev/null
 systemctl reload nginx                                 >> /dev/null
 If_Error_Exit "Failed to reload nginx."
-service php7.2-fpm restart                             >> /dev/null
+service php7.4-fpm restart                             >> /dev/null
 If_Error_Exit "Failed to reload PHP-FPM."
 service ssh restart                                    >> /dev/null
 If_Error_Exit "Failed to load reload sshd."

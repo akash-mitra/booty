@@ -7,7 +7,7 @@
 # server block for the application
 server {
         listen 80;
-        server_name www.example.com;
+        server_name example.com;
         root /var/www/app/public;
         index index.html index.php;
 
@@ -45,7 +45,7 @@ server {
         # Nginx Pass PHP requests to PHP-FPM
         # Refer: https://laravel.com/docs/7.x/deployment
         location ~ \.php$ {
-            fastcgi_pass unix:/var/run/php/php7.2-fpm.sock;
+            fastcgi_pass unix:/var/run/php/php7.4-fpm.sock;
             fastcgi_index index.php;
             fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
             include fastcgi_params;
