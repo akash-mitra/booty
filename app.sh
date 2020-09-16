@@ -75,10 +75,11 @@ USER_DB_PASS=$(cat /root/mysql_app_password)
 
 # Setting env file
 # -----------------------------------------------------------------------------------
+log "Setting .env file"
 sudo -u appusr  cp .env.example .env
 
 
-sudo -u appusr  sed -i "s|^ADMIN_USER_NAME=.*$|ADMIN_USER_NAME=${ADMIN_USER_NAME}|" .env
+sudo -u appusr  sed -i "s|^ADMIN_USER_NAME=.*$|ADMIN_USER_NAME=\"${ADMIN_USER_NAME}\"|" .env
 sudo -u appusr  sed -i "s|^ADMIN_USER_EMAIL=.*$|ADMIN_USER_EMAIL=${ADMIN_USER_EMAIL}|" .env
 sudo -u appusr  sed -i "s|^ADMIN_USER_PASSWORD=.*$|ADMIN_USER_PASSWORD=${ADMIN_USER_PASSWORD}|" .env
 
@@ -89,6 +90,7 @@ sudo -u appusr  sed -i "s/^DB_PASSWORD=.*$/DB_PASSWORD=${USER_DB_PASS}\nDB_SOCKE
 
 # Running artisan commands
 # -----------------------------------------------------------------------------------
+log "Running artisan command"
 sudo -u appusr php ${APP_ROOT}/artisan key:generate --force
 
 sudo -u appusr php ${APP_ROOT}/artisan migrate --seed --force
@@ -113,6 +115,7 @@ sudo -u appusr php ${APP_ROOT}/artisan route:cache
 
 
 # Scheduling Cron Task
+log "Setting cron tasks"
 #sudo -u appusr crontab -l > mycron
 echo "* * * * * cd ${APP_ROOT} && php artisan schedule:run >> /dev/null 2>&1" >> mycron
 crontab mycron

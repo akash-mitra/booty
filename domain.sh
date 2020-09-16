@@ -53,7 +53,7 @@ sudo -u appusr  sed -i "s/^DOMAIN=.*$/DOMAIN=${DOMAIN_NAME}/" ${APP_ROOT}/.env
 sudo -u appusr  sed -i "s/^# SESSION_DOMAIN=.*$/SESSION_DOMAIN=.${DOMAIN_NAME}/" ${APP_ROOT}/.env
 
 # change domain name in nginx.conf
-sudo -u appusr  sed -i "s|example.com|${DOMAIN_NAME}|g" /etc/nginx/sites-enabled/app
+sed -i "s|example.com|${DOMAIN_NAME}|g" /etc/nginx/sites-enabled/app
 
 # restart nginx
 systemctl reload nginx                                 >> /dev/null
