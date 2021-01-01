@@ -13,7 +13,7 @@
 #
 #      RUN THIS SCRIPT ONLY WHEN -
 #      (1) The application is a Laravel App
-#      (2) The Server is configured with Booty.sh script
+#      (2) The Server is configured with server.sh script
 #
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! IMPORTANT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -28,8 +28,7 @@ function If_Error_Exit () {
   fi
 }
 
-# booty.sh generally creates application folder
-# under /var/www/app.
+# server.sh generally creates application folder under /var/www/app.
 APP_ROOT="/var/www/app"
 
 

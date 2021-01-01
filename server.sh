@@ -110,6 +110,9 @@ log "[*] Updating system."
 apt-get --assume-yes --quiet  update                   >> /dev/null
 apt-get --assume-yes --quiet  dist-upgrade             >> /dev/null
 
+# This ensures that package download happens in HTTPS instead of HTTP
+apt-get --assume-yes --quiet  apt-transport-https      >> /dev/null
+
 
 
 # Start installations
