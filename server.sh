@@ -111,14 +111,14 @@ apt-get --assume-yes --quiet  update                   >> /dev/null
 apt-get --assume-yes --quiet  dist-upgrade             >> /dev/null
 
 # This ensures that package download happens in HTTPS instead of HTTP
-apt-get --assume-yes --quiet  apt-transport-https      >> /dev/null
+apt-get --assume-yes --quiet  install apt-transport-https      >> /dev/null
 
 
 
 # Start installations
 # -----------------------------------------------------------------------------------
 
-log "[*] Installing nginx."
+log "[*] Installing nginx and PHP."
 apt-get --assume-yes --quiet install nginx \
     zip \
     unzip \
@@ -134,7 +134,7 @@ apt-get --assume-yes --quiet install nginx \
     php-xml \
     php-zip >> /dev/null
 
-If_Error_Exit "Unable to install Nginx"
+If_Error_Exit "Nginx and PHP installation failed."
 
 log "[*] Configuring nginx."
 
